@@ -174,6 +174,7 @@ resources:
                 - Effect: "Allow"
                   Action:
                     - "execute-api:Invoke"
+                  #todo: find a way to inject the endpoint here e.g arn:aws:execute-api:us-east-1:*:ery4xehyv6/*
                   Resource: "*"
 
     cognitoUnAuthorizedRole:
@@ -203,22 +204,21 @@ resources:
                     - "cognito-sync:*"
                   Resource: "*"
 
-        # CognitoIdentityProviders:
-        # - ClientId:
-        #     Ref: cognitoPoolClient
-        #   ProviderName:
-        #     Ref: cognitoUserPool
-            # Fn::GetAtt: [ "CognitoUserPool", "ProviderName" ]
-
-    # cognitoIdentityPoolRoles:
-    #   Type: AWS::Cognito::IdentityPoolRoleAttachment
-    #   Properties:
-    #     IdentityPoolId:
-    #       Ref: cognitoIdentityPool
-    #     Roles:
-    #       authenticated:
-    #         Fn::GetAtt: [CognitoAuthRole, Arn]
-    #       # Next two lines are the 2 lines of code which break everything
-    #       unauthenticated:
-    #         Fn::GetAtt: [CognitoUnAuthRole, Arn]
+  Outputs:
+    cognitoUserPoolId:
+      Value: !Ref cognitoUserPool
+      Export:
+        Name: "cognitoUserPool::Id"
+    cognitoUserPoolArn:
+      Value: !GetAtt cognitoUserPool.Arn
+      Export:
+        Name: "cognitoUserPool::Arn"
+    cognitoUserPoolClientId:
+      Value: !Ref cognitoPoolClient
+      Export:
+        Name: "cognitoPoolClient::Id"
+    cognitoIdentityPoolId:
+      Value: !Ref cognitoIdentityPool
+      Export:
+        Name: "cognitoIdentityPool::Id"
 
