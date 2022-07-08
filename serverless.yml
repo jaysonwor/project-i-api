@@ -89,60 +89,136 @@ functions:
             allowCredentials: true
           authorizer: aws_iam
 
-# resources:
-#   Resources:
+resources:
+  Resources:
 
-#     cognitoUserPool:
-#       Type: AWS::Cognito::UserPool
-#       Properties:
-#         UserPoolName: project-i-${self:provider.stage}-user-pool
+    cognitoUserPool:
+      Type: AWS::Cognito::UserPool
+      Properties:
+        UserPoolName: project-i-${self:provider.stage}-user-pool
+        AutoVerifiedAttributes:
+          - email
+        # UserAttributeUpdateSettings: 
+        #   AttributesRequireVerificationBeforeUpdate: 
+        #     - email
+        UsernameAttributes:
+          - email
+        UsernameConfiguration: 
+          CaseSensitive: false
 
-#     cognitoResourceServer:
-#       Type: AWS::Cognito::UserPoolResourceServer
-#       Properties:
-#         Name: responses
-#         Identifier: responses
-#         Scopes:
-#           - ScopeDescription: read
-#             ScopeName: read
-#         UserPoolId:
-#           Ref: SisaCognitoUserPool
+    cognitoPoolClient:
+      Type: AWS::Cognito::UserPoolClient
+      DependsOn:
+        - cognitoUserPool
+      Properties:
+        ClientName: project-i-${self:provider.stage}-user-pool-client
+        UserPoolId:
+          Ref: cognitoUserPool
+        GenerateSecret: false 
+        AccessTokenValidity: 60
+        IdTokenValidity: 60
+        RefreshTokenValidity: 60
+        TokenValidityUnits: 
+          AccessToken: minutes
+          IdToken: minutes
+          RefreshToken: minutes
 
-#     SisaCognitoUserPoolClient:
-#       Type: AWS::Cognito::UserPoolClient
-#       DependsOn:
-#         - SisaCognitoResourceServer
-#       Properties:
-#         ClientName: sisa-${self:provider.stage}-user-pool-client
-#         UserPoolId:
-#           Ref: SisaCognitoUserPool
-#       # ExplicitAuthFlows:
-#       # - ADMIN_NO_SRP_AUTH
-#         GenerateSecret: true
-#         AllowedOAuthFlowsUserPoolClient: true
-#         AllowedOAuthFlows: 
-#           - client_credentials
-#         AllowedOAuthScopes: 
-#           - responses/read    
+    cognitoIdentityPool:
+      Type: AWS::Cognito::IdentityPool
+      DependsOn:
+        - cognitoPoolClient
+      Properties:
+        IdentityPoolName: project-i-${self:provider.stage}-identity-pool
+        AllowUnauthenticatedIdentities: false
+        CognitoIdentityProviders: 
+          - ClientId: !Ref cognitoPoolClient
+            ProviderName: !GetAtt cognitoUserPool.ProviderName
 
-#     SisaCognitoDomain:
-#       Type: AWS::Cognito::UserPoolDomain
-#       Properties:
-#         Domain: sisa-${self:provider.stage}
-#         UserPoolId:
-#           Ref: SisaCognitoUserPool
+    cognitoIdentityPoolRolesAttachment:
+      Type: AWS::Cognito::IdentityPoolRoleAttachment
+      DependsOn:
+        - cognitoIdentityPool
+      Properties:
+        IdentityPoolId: !Ref cognitoIdentityPool
+        Roles: 
+          authenticated: !GetAtt cognitoAuthorizedRole.Arn
+          unauthenticated: !GetAtt cognitoUnAuthorizedRole.Arn
 
-#     # then add an authorizer you can reference later
-#     SisaApiGatewayAuthorizer:
-#       DependsOn:
-#       # this is pre-defined by serverless
-#       - ApiGatewayRestApi
-#       Type: AWS::ApiGateway::Authorizer
-#       Properties:
-#         Name: cognito_auth
-#         # apparently ApiGatewayRestApi is a global string
-#         RestApiId: { "Ref" : "ApiGatewayRestApi" }
-#         IdentitySource: method.request.header.Authorization
-#         Type: COGNITO_USER_POOLS
-#         ProviderARNs:
-#         - Fn::GetAtt: [SisaCognitoUserPool, Arn]
+    cognitoAuthorizedRole:
+      Type: "AWS::IAM::Role"
+      Properties:
+        AssumeRolePolicyDocument: 
+          Version: "2012-10-17"
+          Statement:
+            - Effect: "Allow"
+              Principal: 
+                Federated: "cognito-identity.amazonaws.com"
+              Action: 
+                - "sts:AssumeRoleWithWebIdentity"
+              Condition:
+                StringEquals: 
+                  "cognito-identity.amazonaws.com:aud": !Ref cognitoIdentityPool
+                "ForAnyValue:StringLike":
+                  "cognito-identity.amazonaws.com:amr": authenticated
+        Policies:
+          - PolicyName: "CognitoAuthorizedPolicy"
+            PolicyDocument: 
+              Version: "2012-10-17"
+              Statement: 
+                - Effect: "Allow"
+                  Action:
+                    - "mobileanalytics:PutEvents"
+                    - "cognito-sync:*"
+                    - "cognito-identity:*"
+                  Resource: "*"
+                - Effect: "Allow"
+                  Action:
+                    - "execute-api:Invoke"
+                  Resource: "*"
+
+    cognitoUnAuthorizedRole:
+      Type: "AWS::IAM::Role"
+      Properties:
+        AssumeRolePolicyDocument: 
+          Version: "2012-10-17"
+          Statement:
+            - Effect: "Allow"
+              Principal: 
+                Federated: "cognito-identity.amazonaws.com"
+              Action: 
+                - "sts:AssumeRoleWithWebIdentity"
+              Condition:
+                StringEquals: 
+                  "cognito-identity.amazonaws.com:aud": !Ref cognitoIdentityPool
+                "ForAnyValue:StringLike":
+                  "cognito-identity.amazonaws.com:amr": unauthenticated
+        Policies:
+          - PolicyName: "CognitoUnauthorizedPolicy"
+            PolicyDocument: 
+              Version: "2012-10-17"
+              Statement: 
+                - Effect: "Allow"
+                  Action:
+                    - "mobileanalytics:PutEvents"
+                    - "cognito-sync:*"
+                  Resource: "*"
+
+        # CognitoIdentityProviders:
+        # - ClientId:
+        #     Ref: cognitoPoolClient
+        #   ProviderName:
+        #     Ref: cognitoUserPool
+            # Fn::GetAtt: [ "CognitoUserPool", "ProviderName" ]
+
+    # cognitoIdentityPoolRoles:
+    #   Type: AWS::Cognito::IdentityPoolRoleAttachment
+    #   Properties:
+    #     IdentityPoolId:
+    #       Ref: cognitoIdentityPool
+    #     Roles:
+    #       authenticated:
+    #         Fn::GetAtt: [CognitoAuthRole, Arn]
+    #       # Next two lines are the 2 lines of code which break everything
+    #       unauthenticated:
+    #         Fn::GetAtt: [CognitoUnAuthRole, Arn]
+
