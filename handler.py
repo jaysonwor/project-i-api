@@ -1,16 +1,24 @@
 import json
+import builder
 
 
 def hello(event, context):
     body = {
-        "message": "Go Serverless v1.0! Your function executed successfully!",
+        "message": "Go Serverless v1.0! Your function executed successfully1111!",
         "input": event
     }
+    # body = response.toast("Go Serverless v1.0! Your function executed successfully!")
 
-    response = {
-        "statusCode": 200,
-        "body": json.dumps(body)
-    }
+    # response1 = {
+    #     "statusCode": 200,
+    #     'headers': {
+    #         'Access-Control-Allow-Origin': '*',
+    #         'Access-Control-Allow-Credentials': True
+    #     },
+    #     "body": json.dumps(body)
+    # }
+
+    response = builder.build_response(200, body)
 
     return response
 
