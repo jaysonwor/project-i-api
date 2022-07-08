@@ -33,7 +33,7 @@ provider:
     - Effect: Allow
       Action:
         - s3:*
-      Resource: "*"
+      Resource: "arn:aws:s3:::${self:custom.profile-bucket}/*"
 
 plugins:
   - serverless-python-requirements

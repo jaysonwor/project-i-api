@@ -21,7 +21,7 @@ def get(event, context):
     token = event['headers']['jwt']
     decoded = jwt.decode(token, options={"verify_signature": False})
     filename = decoded['cognito:username']
-    object_key = filename
+    object_key = "images/"+filename
     try:
         file_content = s3_client.get_object(
             Bucket=bucket_name, Key=object_key)["Body"].read()
@@ -45,7 +45,7 @@ def save(event, context):
     print(content)
     token = event['headers']['jwt']
     decoded = jwt.decode(token, options={"verify_signature": False})
-    filename = decoded['cognito:username']
+    filename = "images/"+decoded['cognito:username']
     try:
         file_content = s3_client.put_object(
             Bucket=bucket_name, Key=filename, Body=base64.b64decode(content))
