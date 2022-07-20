@@ -88,6 +88,48 @@ functions:
               - jwt
             allowCredentials: true
           authorizer: aws_iam
+  get-video:
+    handler: video-handler.get
+    environment:
+      BUCKET: ${self:custom.profile-bucket}
+    events:
+      - http:
+          path: get-video
+          method: post
+          cors: 
+            origins:
+              - '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - Access-Control-Allow-Origin
+              - jwt
+            allowCredentials: true
+          authorizer: aws_iam
+  save-video:
+    handler: video-handler.save
+    environment:
+      BUCKET: ${self:custom.profile-bucket}
+    events:
+      - http:
+          path: save-video
+          method: post
+          cors: 
+            origins:
+              - '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - Access-Control-Allow-Origin
+              - jwt
+            allowCredentials: true
+          authorizer: aws_iam
 
 resources:
   Resources:

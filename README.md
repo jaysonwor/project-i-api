@@ -7,7 +7,7 @@ Serverside APIs for the Project I.
 - Python 3.x
 - AWS CLI
 ### Environment Deployment
-- sls deploy  
+- sls deploy  -or- npx serverless deploy
     - assumes you have a ~/.aws/creds setup
 #### Creational Artifacts:
 - Cognito User Pool
