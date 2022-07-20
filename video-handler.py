@@ -48,8 +48,9 @@ def save(event, context):
 
         token = event['headers']['jwt']
         decoded = jwt.decode(token, options={"verify_signature": False})
-        filename = decoded['cognito:username']
+        filename = decoded['cognito:username']        
         object_key = filename+"/videos/one.webm"
+        print(object_key)
     
         file_content = s3_client.put_object(
             Bucket=bucket_name, Key=object_key, Body=decoded_file)
