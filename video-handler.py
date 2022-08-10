@@ -9,21 +9,58 @@ import os, json, base64, boto3, builder, jwt, time
 s3_client = boto3.client("s3")
 bucket_name = os.getenv('BUCKET')
 
-
-def get(event, context):
-    token = event['headers']['jwt']
-    decoded = jwt.decode(token, options={"verify_signature": False})
-    filename = decoded['cognito:username']
-    object_key = filename+"/videos/one"
+def delete(event, context):
+    print("Received event {}".format(json.dumps(event)))
     try:
-        file_content = s3_client.get_object(
-            Bucket=bucket_name, Key=object_key)["Body"].read()
-        response = builder.build_response(200, base64.b64encode(file_content))
+        body = json.loads(event['body'])
+        filename = body.get("url")
+        response = s3_client.delete_object(Bucket=bucket_name, Key=filename)   
+        return builder.build_response(200, json.dumps(response))
     except Exception as e:
         print(e)
-        raise Exception("Error getting video {} from {}".format(object_key, bucket_name))
+        raise Exception("Error getting videos {}".format(bucket_name))
 
-    return response
+
+def list(event, context):
+    print("Received event {}".format(json.dumps(event)))
+    try:
+        token = event['headers']['jwt']
+        decoded = jwt.decode(token, options={"verify_signature": False})
+        filename = decoded['cognito:username']
+        # filename = "433b3241-e797-4dc1-b248-2024f299dd92"
+        prefix = filename + "/videos"
+        filesArr = []
+        result = s3_client.list_objects(Bucket=bucket_name, Prefix=prefix)
+        files = result.get("Contents")
+        for file in files:
+            print(file['Key'])
+            object_name = file['Key']
+            response = s3_client.generate_presigned_url('get_object',Params={'Bucket': bucket_name,'Key': object_name})
+            print(response)
+            # filesArr.append(response) todo
+            filesArr.append({file['Key']: response})
+        
+        return builder.build_response(200, json.dumps(filesArr))
+    except Exception as e:
+        print(e)
+        raise Exception("Error getting videos {}".format(bucket_name))
+
+
+def count(event, context):
+    print("Received event {}".format(json.dumps(event)))
+    try:
+        token = event['headers']['jwt']
+        decoded = jwt.decode(token, options={"verify_signature": False})
+        filename = decoded['cognito:username']
+        prefix = filename + "/videos"
+        result = s3_client.list_objects(Bucket=bucket_name, Prefix=prefix)
+        # print(result['Contents'])
+        print(len(result['Contents']))
+        count = len(result['Contents'])
+        return builder.build_response(200, json.dumps(count))
+    except Exception as e:
+        print(e)
+        raise Exception("Error getting videos {}".format(bucket_name))
 
 
 def save(event, context):

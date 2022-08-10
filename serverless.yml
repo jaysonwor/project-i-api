@@ -33,7 +33,9 @@ provider:
     - Effect: Allow
       Action:
         - s3:*
-      Resource: "arn:aws:s3:::${self:custom.profile-bucket}/*"
+      Resource: 
+        - "arn:aws:s3:::${self:custom.profile-bucket}/*"
+        - "arn:aws:s3:::${self:custom.profile-bucket}"
 
 plugins:
   - serverless-python-requirements
@@ -117,6 +119,69 @@ functions:
       - http:
           path: save-video
           method: post
+          cors: 
+            origins:
+              - '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - Access-Control-Allow-Origin
+              - jwt
+            allowCredentials: true
+          authorizer: aws_iam
+  list-videos:
+    handler: video-handler.list
+    environment:
+      BUCKET: ${self:custom.profile-bucket}
+    events:
+      - http:
+          path: list-videos
+          method: post
+          cors: 
+            origins:
+              - '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - Access-Control-Allow-Origin
+              - jwt
+            allowCredentials: true
+          authorizer: aws_iam
+  delete-video:
+    handler: video-handler.delete
+    environment:
+      BUCKET: ${self:custom.profile-bucket}
+    events:
+      - http:
+          path: delete-video
+          method: post
+          cors: 
+            origins:
+              - '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - Access-Control-Allow-Origin
+              - jwt
+            allowCredentials: true
+          authorizer: aws_iam
+  count-videos:
+    handler: video-handler.count
+    environment:
+      BUCKET: ${self:custom.profile-bucket}
+    events:
+      - http:
+          path: count-videos
+          method: get
           cors: 
             origins:
               - '*'
