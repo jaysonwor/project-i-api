@@ -26,9 +26,9 @@ def list(event, context):
     try:
         token = event['headers']['jwt']
         decoded = jwt.decode(token, options={"verify_signature": False})
-        filename = decoded['cognito:username']
+        parent = decoded['cognito:username']
         # filename = "433b3241-e797-4dc1-b248-2024f299dd92"
-        prefix = filename + "/videos"
+        prefix = parent + "/videos"
         filesArr = []
         result = s3_client.list_objects(Bucket=bucket_name, Prefix=prefix)
         files = result.get("Contents")
@@ -51,16 +51,16 @@ def count(event, context):
     try:
         token = event['headers']['jwt']
         decoded = jwt.decode(token, options={"verify_signature": False})
-        filename = decoded['cognito:username']
-        prefix = filename + "/videos"
+        parent = decoded['cognito:username']
+        prefix = parent + "/videos"
         result = s3_client.list_objects(Bucket=bucket_name, Prefix=prefix)
-        # print(result['Contents'])
-        print(len(result['Contents']))
+        print(result['Contents'])
+        # print(len(result['Contents']))
         count = len(result['Contents'])
         return builder.build_response(200, json.dumps(count))
     except Exception as e:
-        print(e)
-        raise Exception("Error getting videos {}".format(bucket_name))
+        # just return 0 
+        return builder.build_response(200, json.dumps(0)) 
 
 
 def save(event, context):
@@ -80,8 +80,8 @@ def save(event, context):
 
         token = event['headers']['jwt']
         decoded = jwt.decode(token, options={"verify_signature": False})
-        filename = decoded['cognito:username']     
-        object_key = "%s/%s/%s.%s"%(filename,"videos",ts,"webm")
+        parent = decoded['cognito:username']     
+        object_key = "%s/%s/%s.%s"%(parent,"videos",ts,"mp4")
         print("Saving file to: "+object_key)
     
         file_content = s3_client.put_object(
