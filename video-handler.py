@@ -1,4 +1,4 @@
-import os, json, base64, boto3, builder, jwt, time, uuid
+import os, json, base64, boto3, builder, jwt, time, uuid, re
 # from botocore.vendored import requests
 # from io import BytesIO
 # import logging
@@ -79,7 +79,8 @@ def save(event, context):
         token = event['headers']['jwt']
         decoded = jwt.decode(token, options={"verify_signature": False})
         uname = decoded['cognito:username']     
-        object_key = "%s/%s/%s.%s"%("videos",uname,ts,"mp4")
+        # object_key = "%s/%s/%s.%s"%("videos",uname,ts,"mp4")
+        object_key = "%s/%s/%s"%("videos",uname,ts)
         print("Saving file to: "+object_key)
     
         file_content = s3_client.put_object(
@@ -106,19 +107,22 @@ def submit_transcriber(event, context):
         s3Path = "s3://" + s3bucket + "/" + s3object
         # jobName = s3object + '-' + str(uuid.uuid4())
         # jobName = "projectITest"
-        jobName = str(uuid.uuid4())
+        # jobName = str(uuid.uuid4())
+        parsed_folder = re.split("/", s3object)
+        uname = parsed_folder[1]
+        file = parsed_folder[2]
 
         client = boto3.client('transcribe')
       
         response = client.start_transcription_job(
-        TranscriptionJobName=jobName,
+        TranscriptionJobName=uname + "-" + file,
         LanguageCode='en-US',
         MediaFormat='webm',
         Media={
             'MediaFileUri': s3Path
         },
             OutputBucketName = bucket_name,
-            OutputKey = "transcribe_output/"
+            OutputKey = "transcribe_output/"+uname+"/"
         )
 
 
