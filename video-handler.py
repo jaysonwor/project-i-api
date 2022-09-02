@@ -1,4 +1,4 @@
-import os, json, base64, boto3, builder, jwt, time
+import os, json, base64, boto3, builder, jwt, time, uuid
 # from botocore.vendored import requests
 # from io import BytesIO
 # import logging
@@ -26,9 +26,9 @@ def list(event, context):
     try:
         token = event['headers']['jwt']
         decoded = jwt.decode(token, options={"verify_signature": False})
-        parent = decoded['cognito:username']
+        uname = decoded['cognito:username']
         # filename = "433b3241-e797-4dc1-b248-2024f299dd92"
-        prefix = parent + "/videos"
+        prefix = "videos/" + uname
         filesArr = []
         result = s3_client.list_objects(Bucket=bucket_name, Prefix=prefix)
         files = result.get("Contents")
@@ -51,37 +51,35 @@ def count(event, context):
     try:
         token = event['headers']['jwt']
         decoded = jwt.decode(token, options={"verify_signature": False})
-        parent = decoded['cognito:username']
-        prefix = parent + "/videos"
+        uname = decoded['cognito:username']
+        prefix = "videos/" + uname
+        print(bucket_name)
+        print(prefix)
         result = s3_client.list_objects(Bucket=bucket_name, Prefix=prefix)
         print(result['Contents'])
-        # print(len(result['Contents']))
         count = len(result['Contents'])
+        print("{} videos found".format(count))
         return builder.build_response(200, json.dumps(count))
     except Exception as e:
         # just return 0 
-        return builder.build_response(200, json.dumps(0)) 
+        print(e)
+        return builder.build_response(200, json.dumps(e)) 
 
 
 def save(event, context):
 
     print("Received event {}".format(json.dumps(event)))
     try:
-        #get the body of the request
         data = json.loads(event['body'])
         print(data)
-        #get the body json element 
         data = str(data['body'])
-        #print(data)
-        # decode the base64 input
         decoded_file = base64.b64decode(data)
-        # ts stores the time in seconds
         ts = time.time()
 
         token = event['headers']['jwt']
         decoded = jwt.decode(token, options={"verify_signature": False})
-        parent = decoded['cognito:username']     
-        object_key = "%s/%s/%s.%s"%(parent,"videos",ts,"mp4")
+        uname = decoded['cognito:username']     
+        object_key = "%s/%s/%s.%s"%("videos",uname,ts,"mp4")
         print("Saving file to: "+object_key)
     
         file_content = s3_client.put_object(
@@ -92,3 +90,43 @@ def save(event, context):
     except Exception as e:
         print(e)
         raise Exception("Error saving video {} to {}".format(object_key, bucket_name))
+
+
+def submit_transcriber(event, context):
+
+    print("Received event {}".format(json.dumps(event)))
+    try:
+        record = event['Records'][0]        
+        s3bucket = record['s3']['bucket']['name']
+        s3object = record['s3']['object']['key']
+
+        print(s3bucket)
+        print(s3object)
+
+        s3Path = "s3://" + s3bucket + "/" + s3object
+        # jobName = s3object + '-' + str(uuid.uuid4())
+        # jobName = "projectITest"
+        jobName = str(uuid.uuid4())
+
+        client = boto3.client('transcribe')
+      
+        response = client.start_transcription_job(
+        TranscriptionJobName=jobName,
+        LanguageCode='en-US',
+        MediaFormat='webm',
+        Media={
+            'MediaFileUri': s3Path
+        },
+            OutputBucketName = bucket_name,
+            OutputKey = "transcribe_output/"
+        )
+
+
+        msg = {
+            'TranscriptionJobName': response['TranscriptionJob']['TranscriptionJobName']
+        }
+
+        return builder.build_response(200, json.dumps(msg))
+    except Exception as e:
+        print(e)
+        raise Exception("Error submitting to the transcriber")

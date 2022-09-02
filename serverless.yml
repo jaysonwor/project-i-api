@@ -1,16 +1,3 @@
-# Welcome to Serverless!
-#
-# This file is the main config file for your service.
-# It's very minimal at this point and uses default values.
-# You can always add more config options for more control.
-# We've included some commented out config examples here.
-# Just uncomment any of them to get that config option.
-#
-# For full config options, check the docs:
-#    docs.serverless.com
-#
-# Happy Coding!
-
 service: project-i-api
 # app and org for use with dashboard.serverless.com
 #app: your-app-name
@@ -36,6 +23,11 @@ provider:
       Resource: 
         - "arn:aws:s3:::${self:custom.profile-bucket}/*"
         - "arn:aws:s3:::${self:custom.profile-bucket}"
+    - Effect: Allow
+      Action:
+        - transcribe:StartTranscriptionJob
+      Resource: 
+        - "*"
 
 plugins:
   - serverless-python-requirements
@@ -195,6 +187,17 @@ functions:
               - jwt
             allowCredentials: true
           authorizer: aws_iam
+  submit-transcriber:
+    handler: video-handler.submit_transcriber
+    environment:
+      BUCKET: ${self:custom.profile-bucket}      
+    events:
+      - s3: 
+          bucket: ${self:custom.profile-bucket}
+          event: s3:ObjectCreated:Put
+          rules:
+            - prefix: videos/
+          existing: true
 
 resources:
   Resources:

@@ -15,13 +15,12 @@ bucket_name = os.getenv('BUCKET')
 
 
 def get(event, context):
-    # log.debug("Received event {}".format(json.dumps(event)))
-    # print("Received event {}".format(json.dumps(event)))
-    # print(context)
+    print("Received event {}".format(json.dumps(event)))
+
     token = event['headers']['jwt']
     decoded = jwt.decode(token, options={"verify_signature": False})
-    filename = decoded['cognito:username']
-    object_key = filename+"/images/profile"
+    uname = decoded['cognito:username']
+    object_key = "images/" + uname + "/profile"
     # todo: check first folder $username exists and if not create
     try:
         file_content = s3_client.get_object(
@@ -35,7 +34,6 @@ def get(event, context):
 
 
 def save(event, context):
-
     print("Received event {}".format(json.dumps(event)))
 
     body = event['body']
@@ -46,8 +44,8 @@ def save(event, context):
     print(content)
     token = event['headers']['jwt']
     decoded = jwt.decode(token, options={"verify_signature": False})
-    filename = decoded['cognito:username']
-    object_key = filename+"/images/profile"
+    uname = decoded['cognito:username']
+    object_key = "images/" + uname + "/profile"
     try:
         file_content = s3_client.put_object(
             Bucket=bucket_name, Key=object_key, Body=base64.b64decode(content))
