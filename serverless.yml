@@ -26,6 +26,8 @@ provider:
     - Effect: Allow
       Action:
         - transcribe:StartTranscriptionJob
+        - comprehend:DetectDominantLanguage,
+        - comprehend:DetectSentiment
       Resource: 
         - "*"
 
@@ -124,6 +126,28 @@ functions:
               - jwt
             allowCredentials: true
           authorizer: aws_iam
+  get-upload-url:
+    handler: video-handler.get_upload_url
+    environment:
+      BUCKET: ${self:custom.profile-bucket}
+    events:
+      - http:
+          path: get-upload-url
+          method: post
+          cors: 
+            origins:
+              - '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - Access-Control-Allow-Origin
+              - jwt
+              - toast
+            allowCredentials: true
+          authorizer: aws_iam
   list-videos:
     handler: video-handler.list
     environment:
@@ -197,6 +221,17 @@ functions:
           event: s3:ObjectCreated:Put
           rules:
             - prefix: videos/
+          existing: true
+  analyze-transcribe:
+    handler: video-handler.submit_comprehend
+    environment:
+      BUCKET: ${self:custom.profile-bucket}      
+    events:
+      - s3: 
+          bucket: ${self:custom.profile-bucket}
+          event: s3:ObjectCreated:Put
+          rules:
+            - prefix: transcribe_output/
           existing: true
 
 resources:
