@@ -206,19 +206,19 @@ def get_upload_url(event, context):
         ts = time.time()
         headers = event['headers']
         token = headers.get('jwt', '')
-        auth_header = headers.get('toast', '')
-        print(auth_header)
-        if auth_header.startswith('AWS'):
-            _, credentials_base64 = auth_header.split(' ', 1)
-            print(credentials_base64)
-            try:
-                # credentials_bytes = base64.b64decode(credentials_base64)
-                # credentials_str = credentials_bytes.decode(errors='ignore')
-                access_key_id, secret_access_key, session_token = credentials_base64.split(':')
-            except Exception as e:
-                # Handle any decoding or splitting errors here
-                print("Error decoding credentials:", e)
-                # Add any additional error handling or log the error
+        # auth_header = headers.get('toast', '')
+        # print(auth_header)
+        # if auth_header.startswith('AWS'):
+        #     _, credentials_base64 = auth_header.split(' ', 1)
+        #     print(credentials_base64)
+        #     try:
+        #         # credentials_bytes = base64.b64decode(credentials_base64)
+        #         # credentials_str = credentials_bytes.decode(errors='ignore')
+        #         access_key_id, secret_access_key, session_token = credentials_base64.split(':')
+        #     except Exception as e:
+        #         # Handle any decoding or splitting errors here
+        #         print("Error decoding credentials:", e)
+        #         # Add any additional error handling or log the error
 
         decoded = jwt.decode(token, options={"verify_signature": False})
         print(decoded)
@@ -228,9 +228,9 @@ def get_upload_url(event, context):
         print(bucket_name)
         print(file_name)
 
-        print(access_key_id)
-        print(secret_access_key)
-        print(session_token)
+        # print(access_key_id)
+        # print(secret_access_key)
+        # print(session_token)
 
         content_type = "video/webm"
 

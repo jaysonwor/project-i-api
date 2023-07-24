@@ -145,7 +145,6 @@ functions:
               - X-Amz-Security-Token
               - Access-Control-Allow-Origin
               - jwt
-              - toast
             allowCredentials: true
           authorizer: aws_iam
   list-videos:
